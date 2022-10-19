@@ -11,14 +11,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * <p>
- * 前端控制器
- * </p>
- *
- * @author admin
- * @since 2022-06-01
- */
+
 @RestController
 @RequestMapping("/student")
 public class StudentController {

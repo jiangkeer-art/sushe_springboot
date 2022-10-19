@@ -7,14 +7,6 @@ import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
 
-/**
- * <p>
- *
- * </p>
- *
- * @author admin
- * @since 2022-06-01
- */
 @Data
 @EqualsAndHashCode(callSuper = false)
 public class Moveout implements Serializable {

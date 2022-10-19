@@ -17,14 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * <p>
- * 前端控制器
- * </p>
- *
- * @author admin
- * @since 2022-06-01
- */
+
 @RestController
 @RequestMapping("/absent")
 public class AbsentController {

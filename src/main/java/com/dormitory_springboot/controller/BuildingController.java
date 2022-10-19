@@ -9,14 +9,7 @@ import com.dormitory_springboot.vo.ResultVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * <p>
- * 前端控制器
- * </p>
- *
- * @author admin
- * @since 2022-06-01
- */
+
 @RestController
 @RequestMapping("/building")
 public class BuildingController {
