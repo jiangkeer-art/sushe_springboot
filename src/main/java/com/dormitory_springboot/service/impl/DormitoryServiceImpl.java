@@ -76,17 +76,30 @@ public class DormitoryServiceImpl extends ServiceImpl<DormitoryMapper, Dormitory
 
     @Override
     public Boolean deleteById(Integer id) {
+
         QueryWrapper<Student> studentQueryWrapper = new QueryWrapper<>();
         studentQueryWrapper.eq("dormitory_id", id);
         List<Student> studentList = this.studentMapper.selectList(studentQueryWrapper);
+
+        QueryWrapper<Dormitory> dormitoryQueryWrapper = new QueryWrapper<>();
+        dormitoryQueryWrapper.ne("id", id);
+        List<Dormitory> dormitoryList = this.dormitoryMapper.selectList(dormitoryQueryWrapper);
+
+        int a=0;
         for (Student student : studentList) {
-            Integer availableDormitoryId = this.dormitoryMapper.findAvailableDormitoryId();
-            student.setDormitoryId(availableDormitoryId);
-            try {
-                this.studentMapper.updateById(student);
-                this.dormitoryMapper.subAvailable(availableDormitoryId);
-            } catch (Exception e) {
-                return false;
+            for(Dormitory dormitory : dormitoryList){
+                if(dormitory.getAvailable() > 0 ){
+                    student.setDormitoryId(dormitory.getId());
+                    a=1;
+                    this.studentMapper.updateById(student);
+                    dormitory.setAvailable(dormitory.getAvailable() - 1);
+                    int update = this.dormitoryMapper.updateById(dormitory);
+                    if (update != 1) return false;
+                }
+                if(a==1){
+                    a=0;
+                    break;
+                }
             }
         }
         int delete = this.dormitoryMapper.deleteById(id);

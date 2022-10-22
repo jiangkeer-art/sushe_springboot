@@ -3,10 +3,12 @@ package com.dormitory_springboot.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.dormitory_springboot.entity.Absent;
 import com.dormitory_springboot.entity.Dormitory;
 import com.dormitory_springboot.entity.Student;
 import com.dormitory_springboot.form.SearchForm;
 import com.dormitory_springboot.form.StudentForm;
+import com.dormitory_springboot.mapper.AbsentMapper;
 import com.dormitory_springboot.mapper.DormitoryMapper;
 import com.dormitory_springboot.mapper.StudentMapper;
 import com.dormitory_springboot.service.StudentService;
@@ -28,6 +30,8 @@ public class StudentServiceImpl extends ServiceImpl<StudentMapper, Student> impl
     private StudentMapper studentMapper;
     @Autowired
     private DormitoryMapper dormitoryMapper;
+    @Autowired
+    private AbsentMapper absentMapper;
 
     @Override
     public Boolean saveStudent(Student student) {
@@ -98,17 +102,19 @@ public class StudentServiceImpl extends ServiceImpl<StudentMapper, Student> impl
         //更新学生信息
         Student student = new Student();
         BeanUtils.copyProperties(studentForm, student);
-        int update = this.studentMapper.updateById(student);
-        if (update != 1) return false;
+        Dormitory dormitory = this.dormitoryMapper.selectById(student.getDormitoryId());
+        Dormitory oldDormitory = this.dormitoryMapper.selectById(studentForm.getOldDormitoryId());
+        int update1 = this.studentMapper.updateById(student);
+        if (update1 != 1) return false;
         //更新宿舍数据
         if (!studentForm.getDormitoryId().equals(studentForm.getOldDormitoryId())) {
             //old+1，new-1
-            try {
-                this.dormitoryMapper.addAvailable(studentForm.getOldDormitoryId());
-                this.dormitoryMapper.subAvailable(studentForm.getDormitoryId());
-            } catch (Exception e) {
-                return false;
-            }
+            dormitory.setAvailable(dormitory.getAvailable() - 1);
+            int update2 = this.dormitoryMapper.updateById(dormitory);
+            oldDormitory.setAvailable(oldDormitory.getAvailable() + 1);
+            int update3 = this.dormitoryMapper.updateById(oldDormitory);
+            if (update2 != 1) return false;
+            if (update3 != 1) return false;
         }
         return true;
     }
@@ -117,17 +123,26 @@ public class StudentServiceImpl extends ServiceImpl<StudentMapper, Student> impl
     public Boolean deleteById(Integer id) {
         //修改宿舍数据
         Student student = this.studentMapper.selectById(id);
+        Dormitory dormitory = this.dormitoryMapper.selectById(student.getDormitoryId());
+        QueryWrapper<Absent> absentQueryWrapper = new QueryWrapper<>();
+        absentQueryWrapper.eq("student_id", student.getId());
+        List<Absent> absentList = this.absentMapper.selectList(absentQueryWrapper);
         try {
-            Dormitory dormitory = this.dormitoryMapper.selectById(student.getDormitoryId());
             if (dormitory.getType() > dormitory.getAvailable()) {
-                this.dormitoryMapper.addAvailable(student.getDormitoryId());
+                dormitory.setAvailable(dormitory.getAvailable() + 1);
+                int update = this.dormitoryMapper.updateById(dormitory);
+                if (update != 1) return false;
             }
         } catch (Exception e) {
             return false;
         }
         //删除学生数据
         int delete = this.studentMapper.deleteById(id);
-        if (delete != 1) return false;
+        int delete2=0;
+        for(Absent absent :absentList){
+            delete2=this.absentMapper.deleteById(absent.getId());
+        }
+        if (delete != 1||delete2 != 1) return false;
         return true;
     }
 }

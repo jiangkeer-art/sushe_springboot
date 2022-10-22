@@ -41,5 +41,12 @@ public class MoveoutController {
     public ResultVO moveoutSearch(SearchForm searchForm) {
         return ResultVOUtil.success(this.moveoutService.moveoutSearch(searchForm));
     }
+
+    @DeleteMapping("/deleteById/{id}")
+    public ResultVO deleteById(@PathVariable("id") Integer id) {
+        Boolean delete = this.moveoutService.deleteById(id);
+        if (!delete) return ResultVOUtil.fail();
+        return ResultVOUtil.success(null);
+    }
 }
 

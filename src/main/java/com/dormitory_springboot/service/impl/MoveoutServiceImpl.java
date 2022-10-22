@@ -3,10 +3,12 @@ package com.dormitory_springboot.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.dormitory_springboot.entity.Absent;
 import com.dormitory_springboot.entity.Dormitory;
 import com.dormitory_springboot.entity.Moveout;
 import com.dormitory_springboot.entity.Student;
 import com.dormitory_springboot.form.SearchForm;
+import com.dormitory_springboot.mapper.AbsentMapper;
 import com.dormitory_springboot.mapper.DormitoryMapper;
 import com.dormitory_springboot.mapper.MoveoutMapper;
 import com.dormitory_springboot.mapper.StudentMapper;
@@ -32,6 +34,8 @@ public class MoveoutServiceImpl extends ServiceImpl<MoveoutMapper, Moveout> impl
     private DormitoryMapper dormitoryMapper;
     @Autowired
     private MoveoutMapper moveoutMapper;
+    @Autowired
+    private AbsentMapper absentMapper;
 
     @Override
     public PageVO list(Integer page, Integer size) {
@@ -93,14 +97,9 @@ public class MoveoutServiceImpl extends ServiceImpl<MoveoutMapper, Moveout> impl
         moveout.setCreateDate(CommonUtil.createDate());
         int insert = this.moveoutMapper.insert(moveout);
         if (insert != 1) return false;
-        student.setState("迁出");
+        student.setState("迁出办理中");
         int update = this.studentMapper.updateById(student);
         if (update != 1) return false;
-        try {
-            this.dormitoryMapper.addAvailable(student.getDormitoryId());
-        } catch (Exception e) {
-            return false;
-        }
         return true;
     }
 
@@ -115,7 +114,7 @@ public class MoveoutServiceImpl extends ServiceImpl<MoveoutMapper, Moveout> impl
             MoveoutVO moveoutVO = new MoveoutVO();
             BeanUtils.copyProperties(moveout, moveoutVO);
             Student student = this.studentMapper.selectById(moveout.getStudentId());
-            Dormitory dormitory = this.dormitoryMapper.selectById(moveout.getDormitoryId());
+            Dormitory dormitory = this.dormitoryMapper.selectById(student.getDormitoryId());
             moveoutVO.setStudentName(student.getName());
             moveoutVO.setDormitoryName(dormitory.getName());
             moveoutVOList.add(moveoutVO);
@@ -168,5 +167,36 @@ public class MoveoutServiceImpl extends ServiceImpl<MoveoutMapper, Moveout> impl
         }
         pageVO.setData(moveoutVOList);
         return pageVO;
+    }
+
+    @Override
+    public Boolean deleteById(Integer id) {
+        //修改宿舍数据
+        Moveout moveout = this.moveoutMapper.selectById(id);
+        Student student = this.studentMapper.selectById(moveout.getStudentId());
+
+        QueryWrapper<Absent> absentQueryWrapper = new QueryWrapper<>();
+        absentQueryWrapper.eq("student_id", moveout.getStudentId());
+        List<Absent> absentList = this.absentMapper.selectList(absentQueryWrapper);
+
+        Dormitory dormitory = this.dormitoryMapper.selectById(student.getDormitoryId());
+        try{
+            if (dormitory.getType() > dormitory.getAvailable()) {
+                dormitory.setAvailable(dormitory.getAvailable() + 1);
+                int update = this.dormitoryMapper.updateById(dormitory);
+                if (update != 1) return false;
+            }
+        } catch (Exception e) {
+            return false;
+        }
+        //删除学生数据
+        int delete1 = this.studentMapper.deleteById(moveout.getStudentId());
+        int delete2 = this.moveoutMapper.deleteById(id);
+        int delete3=0;
+        for(Absent absent :absentList){
+            delete3=this.absentMapper.deleteById(absent.getId());
+        }
+        if (delete1 != 1||delete2 != 1||delete3 != 1) return false;
+        return true;
     }
 }

@@ -87,19 +87,30 @@ public class BuildingServiceImpl extends ServiceImpl<BuildingMapper, Building> i
         QueryWrapper<Dormitory> dormitoryQueryWrapper = new QueryWrapper<>();
         dormitoryQueryWrapper.eq("building_id", id);
         List<Dormitory> dormitoryList = this.dormitoryMapper.selectList(dormitoryQueryWrapper);
+        int a=0;
         for (Dormitory dormitory : dormitoryList) {
             QueryWrapper<Student> studentQueryWrapper = new QueryWrapper<>();
             studentQueryWrapper.eq("dormitory_id", dormitory.getId());
             List<Student> studentList = this.studentMapper.selectList(studentQueryWrapper);
             for (Student student : studentList) {
-                Integer availableDormitoryId = this.dormitoryMapper.findAvailableDormitoryId();
-                student.setDormitoryId(availableDormitoryId);
-                try {
-                    this.studentMapper.updateById(student);
-                    this.dormitoryMapper.subAvailable(availableDormitoryId);
-                } catch (Exception e) {
-                    return false;
+                QueryWrapper<Dormitory> dormitoryQueryWrapper2= new QueryWrapper<>();
+                dormitoryQueryWrapper2.ne("building_id", id);
+                List<Dormitory> dormitoryList2 = this.dormitoryMapper.selectList(dormitoryQueryWrapper2);
+                for(Dormitory dormitory2 : dormitoryList2){
+                    if(dormitory2.getAvailable() > 0 ){
+                        student.setDormitoryId(dormitory2.getId());
+                        this.studentMapper.updateById(student);
+                        dormitory2.setAvailable(dormitory2.getAvailable() - 1);
+                        int update = this.dormitoryMapper.updateById(dormitory2);
+                        if (update != 1) return false;
+                        a=1;
+                    }
+                    if(a==1){
+                        a=0;
+                        break;
+                    }
                 }
+
             }
             int delete = this.dormitoryMapper.deleteById(dormitory.getId());
             if (delete != 1) return false;

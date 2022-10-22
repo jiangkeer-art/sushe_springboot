@@ -16,4 +16,6 @@ public interface MoveoutService extends IService<Moveout> {
     public PageVO moveoutList(Integer page, Integer size);
 
     public PageVO moveoutSearch(SearchForm searchForm);
+
+    public Boolean deleteById(Integer id);
 }
