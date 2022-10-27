@@ -9,5 +9,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 @Mapper
 public interface DormitoryMapper extends BaseMapper<Dormitory> {
-    public Integer findAvailableDormitoryId();
+
 }
