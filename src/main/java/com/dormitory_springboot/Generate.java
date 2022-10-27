@@ -27,7 +27,7 @@ public class Generate {
         // 全局配置
         GlobalConfig globalConfig = new GlobalConfig();
         globalConfig.setOutputDir(System.getProperty("user.dir") + "/src/main/java");
-        globalConfig.setAuthor("admin");
+        //globalConfig.setAuthor("admin");
         globalConfig.setOpen(false);
 
         // 去掉Service
